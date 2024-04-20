@@ -1,0 +1,146 @@
+def NISS (scramble): #generates the inverse sequence of moves from a scramble
+  a=scramble.split(" ")
+  b=''
+  for i in range(len(a)):
+
+    if len(a[len(a)-1-i])==1:
+      lin=a[len(a)-1-i]+"\'"
+    else:
+      if a[len(a)-1-i][1]=="\'":
+        lin=a[len(a)-1-i][0]
+      else:
+        lin=a[len(a)-1-i]
+    b=b+lin+" "
+  return b
+
+def remove_items(test_list, item): 
+    # using filter() + __ne__ to perform the task 
+    res = list(filter((item).__ne__, test_list)) 
+    return res
+
+def Norm (scramble): #Do the cancellation of one order of moves: 
+#U U' = U' U = U2 U2 = '', U U2 = U2 U = U', U2 U' = U' U2 = U
+#It doesnt cancel sequential independet moves like U D U = D U2
+
+  a=scramble.split(" ")
+
+  a= remove_items(a," ")
+  a= remove_items(a,"")
+  
+  if len (a)>1:
+    b=''
+    i = 0
+    while i < (len(a)-1):
+      lin=a[i]
+      if a[i+1][0]==a[i][0]:
+        if len(a[i])==1:
+          if len(a[i+1])==1:
+            lin=a[i]+"2" 
+          else:
+            if a[i+1][1]=="\'":
+              lin=''
+            else:
+              lin=a[i]+"\'"
+        else:
+          if a[i][1] == "\'":
+            if len(a[i+1])==1:
+              lin=''
+            else:
+              if a[i+1][1]=="\'":
+                lin=a[i][0]+"2"
+              else:
+                lin=a[i][0]
+          else:
+            if len(a[i+1])==1:
+              lin=a[i][0]+"\'"
+            else:
+              if a[i+1][1]=="\'":
+                lin=a[i][0]
+              else:
+                lin=''
+        i+=2
+      else:
+       i+=1
+      b=b+lin+" "
+ 
+  
+    if a[len(a)-1][0]!=a[len(a)-2][0]:
+      b=b+a[len(a)-1]
+
+    c=b.split(" ")
+    d = remove_items(c,'')
+  
+    e=''
+    for i in range(len(d)-1):
+      e+=d[i]+" "
+    if len(d)!=0:
+      e+=d[-1]
+    return e
+  else:
+    return a[0]
+
+def normalizar(s): #Applies cancellation of moves recursively
+  tamanho=len(s)
+  s1 = Norm (s)
+  while tamanho != len(s1):
+    tamanho = len(s1)
+    s1=Norm (s1)
+  return s1
+
+#Example of aplication
+
+scramble = "D U F2 L2 U' B2 F2 D L2 U R' F' D R' F' U L D' F' D R2"
+inv_scram = NISS (scramble)
+
+alphacube.load()
+
+result = alphacube.solve(
+    scramble=scramble,
+    beam_width=1024, # Number of candidate solutions to consider at each depth of search
+)
+
+Solves=[result['solutions'][0]] #List of new solutions
+
+a = result['solutions'][0].split(" ")
+print(a)
+sol=''
+for i in range(len(a)-1):
+  sol+=a[i]
+  niss = NISS(sol)+" "+inv_scram
+  niss = normalizar(niss)
+  sol=sol+" "
+  alphacube.load()
+  result1 = alphacube.solve(scramble=niss,beam_width=1024,)
+  Solves.append(normalizar(sol+" "+NISS(result1['solutions'][0])))
+
+for i in Solves:
+  print(i)
+
+#Applying the same technique in the inverse scramble
+
+scramble = normalizar(inv_scram)
+inv_scram = NISS (scramble)
+
+alphacube.load()
+
+result = alphacube.solve(
+    scramble=scramble,
+    beam_width=1024, # Number of candidate solutions to consider at each depth of search
+)
+
+Solves=[NISS(result['solutions'][0])]
+
+a = result['solutions'][0].split(" ")
+print(a)
+sol=''
+for i in range(len(a)-1):
+  sol+=a[i]
+  niss = NISS(sol)+" "+inv_scram
+  niss = normalizar(niss)
+  sol=sol+" "
+  alphacube.load()
+  result1 = alphacube.solve(scramble=niss,beam_width=1024+(3*i),)
+  Solves.append(NISS(normalizar(sol+" "+NISS(result1['solutions'][0]))))
+
+for i in Solves:
+  print(i)
